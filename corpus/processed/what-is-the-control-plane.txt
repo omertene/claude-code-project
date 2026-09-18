@@ -1,0 +1,30 @@
+# What is the control plane? | Control plane vs. data plane
+
+## What is a 'plane' in networking?
+
+In networking, a plane is an abstract conception of where certain processes take place. The term is used in the sense of "plane of existence." The two most commonly referenced planes in networking are the control plane and the data plane (also known as the forwarding plane).
+
+## What is the control plane?
+
+The control plane is the part of a network that controls how data packets are forwarded — meaning how data is sent from one place to another. The process of creating a routing table, for example, is considered part of the control plane. Routers use various protocols to identify network paths, and they store these paths in routing tables.
+
+## What is the data plane? What is the forwarding plane?
+
+In contrast to the control plane, which determines how packets should be forwarded, the data plane actually forwards the packets. The data plane is also called the forwarding plane.
+
+Think of the control plane as being like the stoplights that operate at the intersections of a city. Meanwhile, the data plane (or the forwarding plane) is more like the cars that drive on the roads, stop at the intersections, and obey the stoplights.
+
+## What protocols do routers use to create their routing tables?
+
+- Border Gateway Protocol (BGP)
+- Open Shortest Path First (OSPF)
+- Enhanced Interior Gateway Routing Protocol (EIGRP)
+- Intermediate System to Intermediate System (IS-IS)
+
+## What is network topology?
+
+Network topology refers to the way data flows in a network. The control plane establishes and changes network topology. Again, think of the stoplights that function at the intersections of a city. Network topology is like the way that the roads are arranged, and the computing devices within the network are like the destinations that those roads lead to.
+
+## What is software-defined networking?
+
+Software-defined networking (SDN) is a method for managing and configuring networks using software. SDN technology enables IT administrators to configure their networks using a software application, instead of changing the configuration of physical equipment. SDN is made possible by separating the control plane from the forwarding/data plane.
