@@ -1,0 +1,110 @@
+[
+  {
+    "id": "sd1",
+    "category": "single_doc",
+    "question": "What is a router and what does it do?",
+    "note": "Fully answerable from the what-is-a-router article alone; no synthesis across articles needed."
+  },
+  {
+    "id": "sd2",
+    "category": "single_doc",
+    "question": "What is a network switch used for?",
+    "note": "Fully answerable from the what-is-a-network-switch article alone."
+  },
+  {
+    "id": "sd3",
+    "category": "single_doc",
+    "question": "What is a subnet, and why do organizations use subnetting?",
+    "note": "Fully answerable from the what-is-a-subnet article alone."
+  },
+  {
+    "id": "sd4",
+    "category": "single_doc",
+    "question": "What are the main components of an SD-WAN architecture?",
+    "note": "Fully answerable from the what-is-an-sd-wan article alone (controller, edge, orchestrator)."
+  },
+  {
+    "id": "sd5",
+    "category": "single_doc",
+    "question": "What is the control plane in networking?",
+    "note": "Fully answerable from the what-is-the-control-plane article alone."
+  },
+  {
+    "id": "md1",
+    "category": "multi_doc",
+    "question": "What's the difference between a router and a network switch?",
+    "note": "Correct answer must draw on and contrast both the what-is-a-router and what-is-a-network-switch articles; an answer sourced from only one is incomplete."
+  },
+  {
+    "id": "md2",
+    "category": "multi_doc",
+    "question": "How do BGP and autonomous systems relate to each other?",
+    "note": "Correct answer must synthesize the what-is-bgp and what-is-an-autonomous-system articles (BGP as the protocol ASes use to exchange routing info with each other)."
+  },
+  {
+    "id": "md3",
+    "category": "multi_doc",
+    "question": "How does the control plane relate to the network layer?",
+    "note": "Correct answer must draw on both the what-is-the-control-plane and what-is-the-network-layer articles; they describe related but distinct concepts (a functional plane vs. an OSI layer)."
+  },
+  {
+    "id": "md4",
+    "category": "multi_doc",
+    "question": "How does SD-WAN relate to the traditional split between the control plane and the data/forwarding plane?",
+    "note": "Correct answer must synthesize the what-is-an-sd-wan and what-is-the-control-plane articles (SDN/SD-WAN separates the control plane from the forwarding plane)."
+  },
+  {
+    "id": "nm1",
+    "category": "near_miss",
+    "question": "What is DNS and how does it resolve domain names to IP addresses?",
+    "note": "DNS is only mentioned once in passing (an attack on Amazon's DNS service in the BGP article) with no explanation of what it is or how it works. Should decline as outside the knowledge base, not answer from general knowledge."
+  },
+  {
+    "id": "nm2",
+    "category": "near_miss",
+    "question": "How does IPv6 addressing work, and how is it different from IPv4?",
+    "note": "IPv6 gets only a one-sentence aside in the subnet article (longer, uses letters) with no real explanation. Should decline as outside the knowledge base, not answer from general knowledge."
+  },
+  {
+    "id": "nm3",
+    "category": "near_miss",
+    "question": "What is a firewall and how does it filter network traffic?",
+    "note": "Firewalls are only named once, as an example of what an SD-WAN edge device may include, with no explanation of how they work. Should decline as outside the knowledge base."
+  },
+  {
+    "id": "nm4",
+    "category": "near_miss",
+    "question": "What is a VPN and how does it encrypt traffic between two points?",
+    "note": "VPNs are mentioned repeatedly as one of several SD-WAN connectivity options but are never defined or explained. Should decline as outside the knowledge base, not answer from general knowledge about VPN protocols/encryption."
+  },
+  {
+    "id": "nm5",
+    "category": "near_miss",
+    "question": "What is a load balancer and how does it distribute traffic across servers?",
+    "note": "Load balancers are not mentioned anywhere in the corpus (zero matches). Should decline as outside the knowledge base."
+  },
+  {
+    "id": "oos1",
+    "category": "out_of_scope",
+    "question": "What's a good recipe for chocolate chip cookies?",
+    "note": "Entirely unrelated to networking. Should decline / state this is outside the scope of this knowledge base rather than answering the cooking question."
+  },
+  {
+    "id": "oos2",
+    "category": "out_of_scope",
+    "question": "Who won the FIFA World Cup in 2018?",
+    "note": "Entirely unrelated to networking. Should decline / state this is outside the scope of this knowledge base."
+  },
+  {
+    "id": "oos3",
+    "category": "out_of_scope",
+    "question": "What is the capital of France?",
+    "note": "Entirely unrelated to networking. Should decline / state this is outside the scope of this knowledge base."
+  },
+  {
+    "id": "oos4",
+    "category": "out_of_scope",
+    "question": "Can you write a short poem about autumn?",
+    "note": "Entirely unrelated to networking, and not a factual question at all. Should decline / state this is outside the scope of this knowledge base rather than attempting the creative request."
+  }
+]
