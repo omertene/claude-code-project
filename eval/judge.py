@@ -81,22 +81,35 @@ def build_prompt(record, retrieved_context):
     if category in ACCURACY_CATEGORIES:
         category_guidance = (
             "This question IS covered by the knowledge base, so the system was expected to "
-            "answer it using the retrieved context.\n"
-            '- "factual_accuracy": score 1-5 how accurate and complete the answer is relative '
-            "to the retrieved context (5 = fully accurate, well-supported by the retrieved "
-            "context, and complete; 1 = inaccurate, contradicts the retrieved context, or "
-            "includes hallucinated details not present in it).\n"
+            "answer it using the retrieved context. Score two SEPARATE things, and do not let "
+            "one bleed into the other:\n"
+            '- "faithfulness" (integer 1-5): are all claims in the answer actually stated in '
+            "the retrieved context, with nothing fabricated or inferred beyond it? 5 = every "
+            "claim is directly supported by the retrieved context; 1 = the answer contains "
+            "fabricated claims, outside knowledge, or contradicts the retrieved context. Judge "
+            "ONLY whether what the answer asserts is supported. Do not lower this score because "
+            "the answer is short, cautious, or declines to answer - an answer that makes only "
+            "supported claims is fully faithful.\n"
+            '- "completeness" (integer 1-5): given what the retrieved context contains, did the '
+            "answer make full use of it, including reasonable synthesis across articles where "
+            "the context supports it? 5 = it covers the key relevant content and draws the "
+            "connections the text supports; 1 = it misses most of the relevant content, or "
+            "declines/hedges on a question the retrieved context does answer. Reasonable "
+            "synthesis means combining statements that ARE in the retrieved context into a "
+            "conclusion they directly support - it does not mean adding outside facts. Judge "
+            "ONLY coverage and use of the context. Do not lower this score because of "
+            "inaccuracy; that belongs to faithfulness.\n"
             '- "correctly_declined": must be null. This question was answerable, so declining '
-            "would itself be a failure - if the answer declined instead of answering, reflect "
-            "that with a low factual_accuracy score and explain why in reasoning."
+            "would itself be a failure - reflect that in a low completeness score, and explain "
+            "why in completeness_reasoning."
         )
     else:
         category_guidance = (
             "This question is NOT covered by the knowledge base (near_miss: a plausible-sounding "
             "networking question the corpus doesn't actually cover; or out_of_scope: not a "
             "networking question at all). The system was expected to decline rather than answer.\n"
-            '- "factual_accuracy": must be null (not applicable - there is nothing in the corpus '
-            "to be accurate or inaccurate about).\n"
+            '- "faithfulness" and "completeness": both must be null (not applicable - there is '
+            "nothing in the corpus to be faithful to or to cover).\n"
             '- "correctly_declined": true if the answer explicitly stated the question is outside '
             "the knowledge base / this project's scope and did NOT answer it from general "
             "knowledge; false if it substantively answered the question (from general knowledge, "
@@ -135,10 +148,13 @@ answered the question when it didn't.
 Respond with ONLY a single JSON object, no markdown code fences, no extra commentary before
 or after it, with exactly these fields:
 {{
-  "factual_accuracy": <integer 1-5 or null>,
+  "faithfulness": <integer 1-5 or null>,
+  "completeness": <integer 1-5 or null>,
   "correctly_cited_sources": <true or false>,
   "correctly_declined": <true, false, or null>,
-  "reasoning": "<one sentence explaining the scoring>"
+  "faithfulness_reasoning": "<one sentence justifying the faithfulness score ONLY; if it is below 5, name the specific claim that is unsupported. null if faithfulness is null>",
+  "completeness_reasoning": "<one sentence justifying the completeness score ONLY; if it is below 5, name what relevant content or synthesis was missed. null if completeness is null>",
+  "reasoning": "<one sentence justifying correctly_cited_sources and correctly_declined>"
 }}"""
 
 
@@ -174,9 +190,12 @@ def judge_record(record):
         "id": record["id"],
         "category": record["category"],
         "question": record["question"],
-        "factual_accuracy": verdict.get("factual_accuracy"),
+        "faithfulness": verdict.get("faithfulness"),
+        "completeness": verdict.get("completeness"),
         "correctly_cited_sources": verdict.get("correctly_cited_sources"),
         "correctly_declined": verdict.get("correctly_declined"),
+        "faithfulness_reasoning": verdict.get("faithfulness_reasoning"),
+        "completeness_reasoning": verdict.get("completeness_reasoning"),
         "reasoning": verdict.get("reasoning"),
     }
 
@@ -202,9 +221,12 @@ def main():
                     "id": record["id"],
                     "category": record["category"],
                     "question": record["question"],
-                    "factual_accuracy": None,
+                    "faithfulness": None,
+                    "completeness": None,
                     "correctly_cited_sources": None,
                     "correctly_declined": None,
+                    "faithfulness_reasoning": None,
+                    "completeness_reasoning": None,
                     "reasoning": None,
                     "error": str(e),
                 }

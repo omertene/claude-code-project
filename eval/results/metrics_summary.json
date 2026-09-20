@@ -1,0 +1,50 @@
+{
+  "n_questions": 18,
+  "faithfulness": {
+    "definition": "mean faithfulness (1-5) over single_doc + multi_doc: all claims supported by retrieved context",
+    "average": 4.89,
+    "n_scored": 9,
+    "n_expected": 9
+  },
+  "completeness": {
+    "definition": "mean completeness (1-5) over single_doc + multi_doc: full use of the retrieved context, incl. supported synthesis",
+    "average": 4.78,
+    "n_scored": 9,
+    "n_expected": 9
+  },
+  "hallucination_rate": {
+    "definition": "% of near_miss + out_of_scope where correctly_declined was false",
+    "percent": 0.0,
+    "n_hallucinated": 0,
+    "n_scored": 9,
+    "n_expected": 9
+  },
+  "source_attribution": {
+    "definition": "% of all questions where correctly_cited_sources was true",
+    "percent": 100.0,
+    "n_correct": 18,
+    "n_scored": 18,
+    "n_expected": 18
+  },
+  "tool_calls_per_question": {
+    "overall_average": 1.78,
+    "by_category": {
+      "single_doc": {
+        "average": 1.6,
+        "n": 5
+      },
+      "multi_doc": {
+        "average": 2.75,
+        "n": 4
+      },
+      "near_miss": {
+        "average": 2.6,
+        "n": 5
+      },
+      "out_of_scope": {
+        "average": 0.0,
+        "n": 4
+      }
+    }
+  }
+}
