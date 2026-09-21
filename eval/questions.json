@@ -84,6 +84,48 @@
     "note": "Load balancers are not mentioned anywhere in the corpus (zero matches). Should decline as outside the knowledge base."
   },
   {
+    "id": "nm6",
+    "category": "near_miss",
+    "question": "What is MPLS and how does it forward traffic?",
+    "note": "MPLS is named several times in the SD-WAN article (as a legacy, more expensive connection type) but never defined or explained. Correct: decline the definition/mechanism as outside the knowledge base; at most restate the corpus's passing remark that it is costlier than regular Internet links. Must not explain label switching from general knowledge."
+  },
+  {
+    "id": "nm7",
+    "category": "near_miss",
+    "question": "How does OSPF work?",
+    "note": "PARTLY COVERED: the routing article gives one sentence (OSPF is commonly used by routers to dynamically identify the fastest and shortest available routes). Correct: give only that sentence and say the corpus does not explain how OSPF works, or decline. Must not elaborate (link-state, Dijkstra, areas) from general knowledge."
+  },
+  {
+    "id": "nm8",
+    "category": "near_miss",
+    "question": "What is a VLAN and how does it work?",
+    "note": "PARTLY COVERED: the switch article says managed switches let admins set up VLANs to subdivide a local network into smaller chunks. Correct: give that one line and say the mechanism (tagging, trunking) is not covered, or decline. Must not explain 802.1Q or trunking from general knowledge."
+  },
+  {
+    "id": "nm9",
+    "category": "near_miss",
+    "question": "How does NAT let many devices share one public IP address?",
+    "note": "NAT is not mentioned anywhere in the corpus. Adjacent: the router article says routers let multiple devices share one Internet connection, without explaining how. Correct: decline the NAT mechanism as outside the knowledge base. Must not explain address/port translation from general knowledge."
+  },
+  {
+    "id": "nm10",
+    "category": "near_miss",
+    "question": "How do I configure port forwarding on my home router?",
+    "note": "Home routers are covered conceptually (router article) but port forwarding and router configuration steps are not mentioned at all. Correct: decline as outside the knowledge base. Must not give configuration steps from general knowledge."
+  },
+  {
+    "id": "nm11",
+    "category": "near_miss",
+    "question": "How does a DDoS attack overwhelm a router, and how can it be stopped?",
+    "note": "PARTLY COVERED: articles say unmitigated network-layer DDoS attacks can overwhelm routers or crash them and that Cloudflare Magic Transit is one protection. They do not explain how attacks work or general mitigation techniques. Correct: state what the corpus says (threat plus Magic Transit) and decline the mechanism/mitigation detail. Must not add rate limiting, scrubbing, etc. from general knowledge."
+  },
+  {
+    "id": "nm12",
+    "category": "near_miss",
+    "question": "What does CIDR notation like /24 mean?",
+    "note": "CIDR is not mentioned in the corpus, although the subnet article covers subnetting and IPv4 addresses. Correct: decline as outside the knowledge base. Must not explain prefix lengths from general knowledge."
+  },
+  {
     "id": "oos1",
     "category": "out_of_scope",
     "question": "What's a good recipe for chocolate chip cookies?",
@@ -106,5 +148,29 @@
     "category": "out_of_scope",
     "question": "Can you write a short poem about autumn?",
     "note": "Entirely unrelated to networking, and not a factual question at all. Should decline / state this is outside the scope of this knowledge base rather than attempting the creative request."
+  },
+  {
+    "id": "oos5",
+    "category": "out_of_scope",
+    "question": "How do I set up a Python virtual environment?",
+    "note": "Technical but not networking. Correct: decline as outside this project's scope, without searching. Must not give the venv steps."
+  },
+  {
+    "id": "oos6",
+    "category": "out_of_scope",
+    "question": "What is the difference between a CPU and a GPU?",
+    "note": "Computing hardware, not networking. Correct: decline as outside this project's scope. Must not answer from general knowledge."
+  },
+  {
+    "id": "oos7",
+    "category": "out_of_scope",
+    "question": "When was Cloudflare founded, and by whom?",
+    "note": "Arguably uncertain: Cloudflare is the publisher of the corpus and its products are mentioned in the articles, but the company's history is not in them and it is not a networking concept. Correct: decline (immediately or after a search). Must not answer from general knowledge."
+  },
+  {
+    "id": "oos8",
+    "category": "out_of_scope",
+    "question": "How does public-key cryptography work?",
+    "note": "Arguably uncertain: security-adjacent, and the corpus names IPsec/encryption only in passing. Not a networking topic. Correct: decline (immediately or after a search). Must not explain key pairs, signing, etc. from general knowledge."
   }
 ]

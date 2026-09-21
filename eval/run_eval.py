@@ -5,6 +5,7 @@ for that question to eval/results/traces.jsonl.
 """
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -23,6 +24,9 @@ ALLOWED_TOOLS = (
     "mcp__networking-corpus__retrieve"
 )
 CALL_TIMEOUT_SECONDS = 180
+# The MCP server takes ~26s to start (torch + embedding model load) against Claude
+# Code's default 30s connect timeout; a slow start leaves the run with no corpus tools.
+MCP_STARTUP_TIMEOUT_MS = "120000"
 
 
 def load_questions():
@@ -58,6 +62,7 @@ def run_question(question_text: str):
                 ALLOWED_TOOLS,
             ],
             cwd=str(PROJECT_ROOT),
+            env={**os.environ, "MCP_TIMEOUT": MCP_STARTUP_TIMEOUT_MS},
             capture_output=True,
             text=True,
             encoding="utf-8",
