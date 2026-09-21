@@ -1,8 +1,8 @@
 {
-  "n_questions": 29,
+  "n_questions": 30,
   "faithfulness": {
     "definition": "mean faithfulness (1-5) over single_doc + multi_doc: all claims supported by retrieved context",
-    "average": 4.78,
+    "average": 4.89,
     "n_scored": 9,
     "n_expected": 9
   },
@@ -13,36 +13,41 @@
     "n_expected": 9
   },
   "hallucination_rate": {
-    "definition": "% of near_miss + out_of_scope where correctly_declined was false",
+    "definition": "% of near_miss + out_of_scope judged 'hallucinated' (answered from outside knowledge); 'full_decline' and 'partial_grounded' are both correct",
     "percent": 0.0,
     "n_hallucinated": 0,
-    "n_scored": 20,
-    "n_expected": 20
+    "verdict_counts": {
+      "full_decline": 15,
+      "hallucinated": 0,
+      "partial_grounded": 6
+    },
+    "n_scored": 21,
+    "n_expected": 21
   },
   "source_attribution": {
     "definition": "% of all questions where correctly_cited_sources was true",
     "percent": 100.0,
-    "n_correct": 29,
-    "n_scored": 29,
-    "n_expected": 29
+    "n_correct": 30,
+    "n_scored": 30,
+    "n_expected": 30
   },
   "tool_calls_per_question": {
-    "overall_average": 1.69,
+    "overall_average": 1.87,
     "by_category": {
       "single_doc": {
         "average": 1.0,
         "n": 5
       },
       "multi_doc": {
-        "average": 2.25,
+        "average": 2.75,
         "n": 4
       },
       "near_miss": {
-        "average": 2.58,
-        "n": 12
+        "average": 2.85,
+        "n": 13
       },
       "out_of_scope": {
-        "average": 0.5,
+        "average": 0.38,
         "n": 8
       }
     }

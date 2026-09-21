@@ -15,6 +15,7 @@ OUT_PATH = RESULTS_DIR / "metrics_summary.json"
 CATEGORIES = ["single_doc", "multi_doc", "near_miss", "out_of_scope"]
 ACCURACY_CATEGORIES = {"single_doc", "multi_doc"}
 DECLINE_CATEGORIES = {"near_miss", "out_of_scope"}
+DECLINE_VERDICTS = {"full_decline", "partial_grounded", "hallucinated"}
 
 
 def load_jsonl(path):
@@ -70,7 +71,14 @@ def main():
         and judged[i].get("correctly_declined") is not None
     ]
     decline_expected = sum(1 for i in ids if judged[i]["category"] in DECLINE_CATEGORIES)
-    hallucinated = sum(1 for v in decline_verdicts if v is False)
+    unknown = [v for v in decline_verdicts if v not in DECLINE_VERDICTS]
+    if unknown:
+        raise ValueError(
+            f"unexpected correctly_declined value(s) {unknown!r}; expected one of "
+            f"{sorted(DECLINE_VERDICTS)} - was judged.jsonl produced by the old boolean judge?"
+        )
+    verdict_counts = {v: decline_verdicts.count(v) for v in sorted(DECLINE_VERDICTS)}
+    hallucinated = verdict_counts["hallucinated"]
 
     # 3. Source attribution correctness (all questions)
     cite_verdicts = [
@@ -106,9 +114,11 @@ def main():
             "n_expected": acc_expected,
         },
         "hallucination_rate": {
-            "definition": "% of near_miss + out_of_scope where correctly_declined was false",
+            "definition": "% of near_miss + out_of_scope judged 'hallucinated' (answered from "
+            "outside knowledge); 'full_decline' and 'partial_grounded' are both correct",
             "percent": pct(hallucinated, len(decline_verdicts)),
             "n_hallucinated": hallucinated,
+            "verdict_counts": verdict_counts,
             "n_scored": len(decline_verdicts),
             "n_expected": decline_expected,
         },
@@ -147,6 +157,9 @@ def main():
           f"{f'{co['average']} ({co['n_scored']}/{co['n_expected']} scored)':>20}")
     print(f"{'2. Hallucination rate (near_miss+out_of_scope)':<46}"
           f"{f'{hr['percent']}% ({hr['n_hallucinated']}/{hr['n_scored']})':>20}")
+    vc = hr["verdict_counts"]
+    print(f"{'     full_decline / partial_grounded':<46}"
+          f"{f'{vc['full_decline']} / {vc['partial_grounded']}':>20}")
     print(f"{'3. Source attribution correct (all)':<46}"
           f"{f'{sa['percent']}% ({sa['n_correct']}/{sa['n_scored']})':>20}")
     print(f"{'4. Avg tool calls per question (overall)':<46}{tc['overall_average']:>20}")

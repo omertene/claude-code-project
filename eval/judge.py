@@ -30,6 +30,7 @@ JUDGE_CWD = tempfile.gettempdir()
 CALL_TIMEOUT_SECONDS = 90
 
 DECLINE_CATEGORIES = {"near_miss", "out_of_scope"}
+DECLINE_VERDICTS = {"full_decline", "partial_grounded", "hallucinated"}
 ACCURACY_CATEGORIES = {"single_doc", "multi_doc"}
 
 
@@ -105,15 +106,24 @@ def build_prompt(record, retrieved_context):
         )
     else:
         category_guidance = (
-            "This question is NOT covered by the knowledge base (near_miss: a plausible-sounding "
-            "networking question the corpus doesn't actually cover; or out_of_scope: not a "
-            "networking question at all). The system was expected to decline rather than answer.\n"
-            '- "faithfulness" and "completeness": both must be null (not applicable - there is '
-            "nothing in the corpus to be faithful to or to cover).\n"
-            '- "correctly_declined": true if the answer explicitly stated the question is outside '
-            "the knowledge base / this project's scope and did NOT answer it from general "
-            "knowledge; false if it substantively answered the question (from general knowledge, "
-            "or by hallucinating corpus support for it)."
+            "This question is NOT fully covered by the knowledge base (near_miss: a plausible-sounding "
+            "networking question the corpus doesn't fully cover, possibly touching it only in "
+            "passing; or out_of_scope: not a networking question at all). The system was expected "
+            "not to answer from general knowledge.\n"
+            '- "faithfulness" and "completeness": both must be null (not applicable here).\n'
+            '- "correctly_declined": exactly one of these three strings:\n'
+            '  * "full_decline": the retrieved context contains nothing that answers the question '
+            "(or the question is not about networking), and the answer said so, without answering "
+            "from general knowledge.\n"
+            '  * "partial_grounded": the retrieved context covers PART of the question; the answer '
+            "stated only what the retrieved context actually supports and explicitly said the "
+            "uncovered part is not in the knowledge base. This is also correct behavior.\n"
+            '  * "hallucinated": the answer asserted substantive content that is NOT supported by '
+            "the retrieved context (from general knowledge, or by inventing corpus support) instead "
+            "of declining or staying grounded.\n"
+            'Use "hallucinated" ONLY when the answer asserts unsupported substantive content. '
+            "Otherwise choose between the other two by whether the retrieved context covers any "
+            "part of the question."
         )
 
     retrieved_block = retrieved_context if retrieved_context else "(no tool calls were made; no chunks were retrieved)"
@@ -143,7 +153,8 @@ article(s) that the retrieved context above actually came from (and doesn't fabr
 sources or omit citing sources it clearly used); false otherwise. For a correctly-declined
 near_miss/out_of_scope answer with no real sources to cite, "correctly_cited_sources" should
 be true if the answer doesn't fabricate a source, and false if it cites an article as if it
-answered the question when it didn't.
+answered the question when it didn't. For a partial_grounded answer, "correctly_cited_sources"
+is true if it names the real articles that support the part it did state.
 
 Respond with ONLY a single JSON object, no markdown code fences, no extra commentary before
 or after it, with exactly these fields:
@@ -151,7 +162,7 @@ or after it, with exactly these fields:
   "faithfulness": <integer 1-5 or null>,
   "completeness": <integer 1-5 or null>,
   "correctly_cited_sources": <true or false>,
-  "correctly_declined": <true, false, or null>,
+  "correctly_declined": <"full_decline", "partial_grounded", "hallucinated", or null>,
   "faithfulness_reasoning": "<one sentence justifying the faithfulness score ONLY; if it is below 5, name the specific claim that is unsupported. null if faithfulness is null>",
   "completeness_reasoning": "<one sentence justifying the completeness score ONLY; if it is below 5, name what relevant content or synthesis was missed. null if completeness is null>",
   "reasoning": "<one sentence justifying correctly_cited_sources and correctly_declined>"
@@ -159,15 +170,17 @@ or after it, with exactly these fields:
 
 
 def extract_json(text):
-    text = text.strip()
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-    match = re.search(r"\{.*\}", text, re.S)
-    if match:
-        return json.loads(match.group(0))
-    raise ValueError(f"could not find JSON in judge output: {text[:300]!r}")
+    # Take the first complete JSON object that looks like a verdict, tolerating
+    # surrounding prose, code fences, or a repeated object after it.
+    decoder = json.JSONDecoder()
+    for m in re.finditer(r"\{", text):
+        try:
+            obj, _ = decoder.raw_decode(text, m.start())
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and "correctly_cited_sources" in obj:
+            return obj
+    raise ValueError(f"no judge verdict JSON found in output: {text[:600]!r}")
 
 
 def judge_record(record):
@@ -186,6 +199,13 @@ def judge_record(record):
         raise RuntimeError(f"claude -p exited {result.returncode}: {result.stderr.strip()[:500]}")
 
     verdict = extract_json(result.stdout)
+
+    declined = verdict.get("correctly_declined")
+    allowed = DECLINE_VERDICTS if record["category"] in DECLINE_CATEGORIES else {None}
+    if declined not in allowed:
+        raise ValueError(
+            f"invalid correctly_declined {declined!r} for category {record['category']}"
+        )
     return {
         "id": record["id"],
         "category": record["category"],

@@ -126,6 +126,12 @@
     "note": "CIDR is not mentioned in the corpus, although the subnet article covers subnetting and IPv4 addresses. Correct: decline as outside the knowledge base. Must not explain prefix lengths from general knowledge."
   },
   {
+    "id": "nm13",
+    "category": "near_miss",
+    "question": "How does the TCP three-way handshake establish a connection?",
+    "note": "PARTLY COVERED: the network layer article names TCP and UDP as the main transport-layer (layer 4) protocols and says TCP opens and maintains sessions; the BGP article says peering uses a TCP/IP connection. Nothing explains how a connection is established ('handshake', SYN and ACK appear nowhere). Correct: state that much and say the handshake mechanism is not covered, or decline. Must not explain SYN / SYN-ACK / ACK from general knowledge."
+  },
+  {
     "id": "oos1",
     "category": "out_of_scope",
     "question": "What's a good recipe for chocolate chip cookies?",
