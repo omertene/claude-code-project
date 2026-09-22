@@ -1,5 +1,5 @@
 """Chunk processed articles by ## section headings and embed each chunk
-with sentence-transformers (all-MiniLM-L6-v2), writing data/index.json.
+with sentence-transformers (BAAI/bge-large-en-v1.5), writing data/index.json.
 """
 import json
 import re
@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer
 
 PROCESSED_DIR = Path("corpus/processed")
 OUT_PATH = Path("data/index.json")
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "BAAI/bge-large-en-v1.5"
 
 SECTION_RE = re.compile(r"^## (.+)$", re.M)
 

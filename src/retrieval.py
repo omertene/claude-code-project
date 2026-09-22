@@ -7,7 +7,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 INDEX_PATH = Path(__file__).resolve().parent.parent / "data" / "index.json"
-MODEL_NAME = "all-MiniLM-L6-v2"
+MODEL_NAME = "BAAI/bge-large-en-v1.5"
 
 # Loaded once at import time so repeated calls don't re-read the index or
 # re-load the embedding model.
