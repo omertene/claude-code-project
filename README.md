@@ -104,13 +104,12 @@ pip install -r requirements.txt
 python src/build_index.py          # rebuilds data/index.json from corpus/processed/
 ```
 
-Register the MCP server for this project. The path to `.mcp.json` in the repo is specific to the original machine, so re-register with your own paths:
+The checked-in `.mcp.json` uses a relative command/path (`python3 src/mcp_server.py`), so a fresh clone should work with it as-is — no manual `claude mcp add` re-registration needed. Two things it assumes:
 
-```bash
-claude mcp add --scope project networking-corpus -- <path-to-python> <path-to-repo>/src/mcp_server.py
-```
+- **`python3` resolves via PATH to an environment with `requirements.txt` installed.** If your `python3`/`python` points somewhere else, either fix PATH or re-register with an explicit interpreter path: `claude mcp add --scope project networking-corpus -- <path-to-python> src/mcp_server.py`.
+- **`claude` is started from the project root** (as documented below) — the relative script path resolves against the directory the subprocess is spawned from.
 
-Then start `claude` in the repo folder, approve the server when prompted, and ask a networking question.
+Start `claude` in the repo folder, approve the server when prompted, and ask a networking question.
 
 To run the eval (about 15 minutes for the questions, 3-4 for the judge):
 

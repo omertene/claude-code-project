@@ -2,9 +2,9 @@
   "mcpServers": {
     "networking-corpus": {
       "type": "stdio",
-      "command": "C:\\Users\\User\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+      "command": "python3",
       "args": [
-        "C:\\Users\\User\\Desktop\\claude code project\\src\\mcp_server.py"
+        "src/mcp_server.py"
       ],
       "env": {}
     }
