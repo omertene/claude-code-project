@@ -1,39 +1,65 @@
 """Retrieval functions over the embedding index built in Phase 2 (data/index.json)."""
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import CrossEncoder, SentenceTransformer
 
 INDEX_PATH = Path(__file__).resolve().parent.parent / "data" / "index.json"
 MODEL_NAME = "BAAI/bge-large-en-v1.5"
+RERANK_MODEL_NAME = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+CANDIDATE_POOL_SIZE = 15
 
 # Loaded once at import time so repeated calls don't re-read the index or
-# re-load the embedding model.
+# re-load the embedding/reranking models. CrossEncoder is its own class (not a
+# SentenceTransformer), so it needs this separate load call. The two model loads
+# are independent, so they run in parallel threads rather than one after another -
+# each spends most of its time in disk I/O and C++/tensor-init code that releases
+# the GIL, so this cuts wall-clock startup roughly to whichever model is slower,
+# not the sum of both.
 _index = json.loads(INDEX_PATH.read_text(encoding="utf-8"))
 _embeddings = np.array([c["embedding"] for c in _index], dtype=np.float32)
 _embeddings_norm = _embeddings / np.linalg.norm(_embeddings, axis=1, keepdims=True)
-_model = SentenceTransformer(MODEL_NAME)
+with ThreadPoolExecutor(max_workers=2) as _pool:
+    _model_future = _pool.submit(SentenceTransformer, MODEL_NAME)
+    _reranker_future = _pool.submit(CrossEncoder, RERANK_MODEL_NAME)
+    _model = _model_future.result()
+    _reranker = _reranker_future.result()
+
+
+def _sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 def search(query, top_k=3):
-    """Embed `query` and return the top_k most similar chunks by cosine similarity."""
+    """Embed `query`, take the CANDIDATE_POOL_SIZE most similar chunks by cosine
+    similarity, then rerank that pool with a cross-encoder and return the top_k
+    after reranking (not before)."""
     query_embedding = _model.encode([query])[0].astype(np.float32)
     query_embedding /= np.linalg.norm(query_embedding)
 
-    scores = _embeddings_norm @ query_embedding
-    top_indices = np.argsort(-scores)[:top_k]
+    cosine_scores = _embeddings_norm @ query_embedding
+    pool_size = min(CANDIDATE_POOL_SIZE, len(_index))
+    candidate_indices = np.argsort(-cosine_scores)[:pool_size]
+
+    # ms-marco-MiniLM-L-6-v2 outputs an unbounded relevance logit, not a 0-1 score;
+    # squash it so similarity_score stays comparable to the old cosine-only scale.
+    pairs = [(query, _index[i]["chunk_text"]) for i in candidate_indices]
+    rerank_scores = _sigmoid(_reranker.predict(pairs))
+    order = np.argsort(-rerank_scores)[:top_k]
 
     results = []
-    for i in top_indices:
+    for pos in order:
+        i = candidate_indices[pos]
         chunk = _index[i]
         results.append(
             {
                 "article_title": chunk["article_title"],
                 "section_heading": chunk["section_heading"],
                 "chunk_text": chunk["chunk_text"],
-                "similarity_score": float(scores[i]),
+                "similarity_score": float(rerank_scores[pos]),
             }
         )
     return results
