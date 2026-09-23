@@ -123,6 +123,13 @@ python eval/compute_metrics.py     # summary -> eval/results/metrics_summary.jso
 
 The MCP server takes about 26 seconds to start, close to Claude Code's 30-second connect limit. The eval sets `MCP_TIMEOUT` to 120 seconds, but a run can still occasionally begin without the corpus tools. If a question that should search shows zero tool calls in `traces.jsonl`, re-run it with `--ids`.
 
+Run the unit tests (pure logic only — no live `claude -p` calls or API keys):
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
 ## Project layout
 
 ```
