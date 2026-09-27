@@ -56,3 +56,14 @@ def test_first_sentence_no_punctuation_hard_truncates():
 def test_retrieve_unknown_article_id_raises_value_error():
     with pytest.raises(ValueError):
         retrieval.retrieve("this-article-does-not-exist")
+
+
+def test_search_is_deterministic_across_repeated_calls():
+    # Real query drawn from eval/questions.json (id "sd1"), so this is a
+    # meaningful check against the actual corpus/index, not a trivial one.
+    query = "What is a router and what does it do?"
+
+    first = retrieval.search(query, top_k=3)
+    second = retrieval.search(query, top_k=3)
+
+    assert first == second
