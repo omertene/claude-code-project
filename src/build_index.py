@@ -21,6 +21,8 @@ def chunk_file(path: Path):
 
     # find each "## heading" line and the text that follows until the next "## " or EOF
     matches = list(SECTION_RE.finditer(text))
+    if not matches:
+        raise ValueError(f"{path}: no '## ' section headings found; cannot chunk this document")
     chunks = []
     for i, m in enumerate(matches):
         heading = m.group(1).strip()
