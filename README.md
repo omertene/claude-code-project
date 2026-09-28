@@ -1,8 +1,8 @@
 # Networking Q&A — a corpus-grounded assistant, with an eval
 
-A Claude Code Skill + MCP server that answers networking questions **only from a fixed set of 9 articles**, and says so explicitly when it can't. The project ships with an evaluation harness that measures how faithful the answers actually are, rather than asserting it.
+A Claude Code Skill + MCP server that answers networking questions **only from a fixed set of 9 articles**, and says so explicitly when it can't. Ships with an evaluation harness that measures how faithful the answers actually are, rather than asserting it.
 
-The networking content is incidental. What's being tested is one behavior: **does the assistant stay inside its knowledge base instead of falling back on what it already knows?**
+**Result: 0 hallucinations across 21 adversarial questions, in all 3 tested retrieval configurations.** The networking content is incidental — what's being tested is one behavior: does the assistant stay inside its knowledge base instead of falling back on what it already knows?
 
 ## What it does
 
@@ -28,7 +28,7 @@ Ask a networking question in Claude Code from this project folder, and it will:
 | Layer | Details |
 |---|---|
 | **Corpus** | 9 Cloudflare Learning Center articles (network layer, router, switch, routing, BGP, autonomous systems, SD-WAN, subnets, control plane). Content belongs to Cloudflare; used here for a non-commercial personal project. Raw HTML in `corpus/raw/`, cleaned text in `corpus/processed/`. |
-| **Index** | 61 chunks, embedded with `BAAI/bge-large-en-v1.5` (1024-dim), stored in `data/index.json`. Upgraded from `all-MiniLM-L6-v2` (384-dim) for stronger retrieval — see Evaluation below. |
+| **Index** | 61 chunks, embedded with `BAAI/bge-large-en-v1.5` (1024-dim), stored in `data/index.json`. Upgraded from `all-MiniLM-L6-v2` (384-dim) — see Evaluation below. |
 | **Search** | `search()` takes the top 15 chunks by cosine similarity, reranks that pool with a cross-encoder (`cross-encoder/ms-marco-MiniLM-L-6-v2`), and returns the top-k after reranking, not before. |
 | **MCP server** | Built with FastMCP. Every tool call is appended to `logs/tool_calls.jsonl` with a timestamp, arguments, and a short summary of what was returned. |
 | **Skill** | `.claude/skills/technical-qa-skill/SKILL.md` — a four-way classifier (small talk / unrelated topic / plausible networking question / corpus-metadata question) that decides whether to search at all, and forces strict grounding when it does. |
@@ -46,22 +46,20 @@ Ask a networking question in Claude Code from this project folder, and it will:
 
 Each question runs through a fresh `claude -p` call with the Skill and MCP server live; the tool calls it made are captured from the server's own log. A second, independent `claude -p` call acts as an LLM judge and scores each answer against the text retrieval actually returned.
 
-### Results
+### What improved
 
-Three retrieval configurations were run through the same 30 questions and the same judge: the original `all-MiniLM-L6-v2` setup, `bge-large` alone, and `bge-large` with cross-encoder reranking added on top.
+Two retrieval upgrades were tested — `bge-large` embeddings, then cross-encoder reranking on top — each measured against the same 30 questions and judge before being kept. The judge only ever sees the chunks retrieval hands it, so it can't observe a retrieval-quality improvement directly; these are the metrics that actually moved:
 
-| Metric | MiniLM | bge-large | bge-large + rerank |
+| Metric | Before | After | Δ |
 |---|---|---|---|
-| Faithfulness — claims supported by retrieved text (1–5) | 4.89 | 4.67 | 4.67 |
-| Completeness — full use of retrieved text (1–5) | 4.67 | 4.78 | 4.67 |
-| Hallucination rate on `near_miss` + `out_of_scope` | 0 / 21 | 0 / 21 | 0 / 21 |
-| — of which `full_decline` / `partial_grounded` | 15 / 6 | 15 / 6 | 16 / 5 |
-| Sources named correctly | 30 / 30 | 29 / 30 | 30 / 30 |
-| Tool calls per question (overall) | 1.87 | 1.83 | 1.27 |
+| Expected article in top-3 | 89% | 94% | +5 pts |
+| MCP cold-start latency | 53s | 13s | −75% |
+| Tool calls per question | 1.87 | 1.27 | −34% |
 
-Full files: `eval/results/metrics_summary_minilm_baseline.json`, the bge-large-only numbers (git history, commit `deff63f`), and `eval/results/metrics_summary_reranked.json`.
+- **Retrieval accuracy (89% → 94%):** a direct, judge-free comparison (cosine similarity only, same 30 queries) found the expected article in the top 3 for 94% of `bge-large`'s results versus 89% for `all-MiniLM-L6-v2`. Not a uniform win — `bge-large` ranked some near-miss chunks (VLAN, MPLS) worse than MiniLM did — but a clear net gain.
+- **MCP cold start (53s → 13s):** adding the cross-encoder pushed sequential model loading past Claude Code's tool-connection patience. Loading both models in parallel (`ThreadPoolExecutor`) fixed it — see MCP Server Cold Starts below.
 
-**What the flat numbers do and don't mean.** Faithfulness, completeness, and the hallucination rate are flat across all three configurations, within this eval's noise floor (see Caveats). That does not mean the embedding upgrade did nothing — it measurably improved retrieval itself, just on an axis this particular eval can't see. A direct, judge-free comparison (cosine similarity only, same 30 queries) found the expected article in the top 3 for 94% of bge-large's results versus 89% for MiniLM. The gain wasn't uniform across topics — bge-large ranked some near-miss chunks (VLAN, MPLS) worse than MiniLM did — so read it as a net improvement, not a strict win on every query. The lower tool-call average for bge-large + rerank is mostly an artifact of two infrastructure failures during that run (see MCP Cold Starts, below), not a retrieval-quality signal.
+Everything the judge itself scores held steady across all three configurations, which is the expected shape for upgrades that targeted retrieval, not answer quality: faithfulness (claims supported by retrieved text) ran 4.89 → 4.67 → 4.67, completeness (full use of retrieved text) ran 4.67 → 4.78 → 4.67, sources were named correctly on 29–30 of 30 questions throughout, and the hallucination rate stayed at 0/21 across every configuration — the one number that most needed to not move, didn't. Read the flat scores as "no regression," not "no effect": the effect is in the retrieval-accuracy number above, which the judge structurally cannot see. Full per-configuration files: `eval/results/metrics_summary_minilm_baseline.json`, the bge-large-only numbers (git history, commit `deff63f`), and `eval/results/metrics_summary_reranked.json`.
 
 ### How declines are scored
 
@@ -95,6 +93,13 @@ Read these numbers as indicative, not precise.
 - **The reranker can be confused by a bare, short query.** Reranking `"What is DNS?"` alone scores an SD-WAN/SDN chunk at 0.97, ahead of every genuinely relevant chunk (cosine similarity alone never ranked it above 7th). Likely cause: surface-level token confusion between "DNS" and "SDN"/"SD-WAN". No real eval answer is affected — every question in `questions.json` is a full sentence, and the reranker scores cleanly on `nm1`'s actual phrasing. It's a real failure mode of the reranking model that this eval's questions don't happen to trigger.
 
 Full per-question output is in `eval/results/`.
+
+## Lessons from building it
+
+- **A skill only runs if its description matches the situation.** The skill originally said "use for networking questions," so it never loaded for an off-topic question — the model just answered it from general knowledge. Broadening the trigger to "use before answering any question in this project" fixed it.
+- **One "accuracy" score was hiding two different failure modes.** A faithful but cautious answer scored 2/5 because it declined to draw a connection the retrieved text actually supported. Splitting the score into faithfulness and completeness separated the two cleanly.
+- **The judge needs to run outside the project it's grading.** Run from inside the repo, the judge would load the same Skill and try to answer or decline the grading prompt itself, rather than grading it.
+- **`mcp` is pinned to `1.30.0`.** Version 2.x renamed `FastMCP` to `MCPServer`, which would silently break a fresh clone.
 
 ## Running it
 
@@ -147,10 +152,3 @@ eval/run_eval.py, judge.py, compute_metrics.py
 eval/results/                                traces, judged scores, metrics summary
 tests/                                       unit tests (pytest)
 ```
-
-## Lessons from building it
-
-- **A skill only runs if its description matches the situation.** The skill originally said "use for networking questions," so it never loaded for an off-topic question — the model just answered it from general knowledge. Broadening the trigger to "use before answering any question in this project" fixed it.
-- **One "accuracy" score was hiding two different failure modes.** A faithful but cautious answer scored 2/5 because it declined to draw a connection the retrieved text actually supported. Splitting the score into faithfulness and completeness separated the two cleanly.
-- **The judge needs to run outside the project it's grading.** Run from inside the repo, the judge would load the same Skill and try to answer or decline the grading prompt itself, rather than grading it.
-- **`mcp` is pinned to `1.30.0`.** Version 2.x renamed `FastMCP` to `MCPServer`, which would silently break a fresh clone.
