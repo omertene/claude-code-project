@@ -17,9 +17,9 @@
     "percent": 0.0,
     "n_hallucinated": 0,
     "verdict_counts": {
-      "full_decline": 16,
+      "full_decline": 15,
       "hallucinated": 0,
-      "partial_grounded": 5
+      "partial_grounded": 6
     },
     "n_scored": 21,
     "n_expected": 21
@@ -32,7 +32,7 @@
     "n_expected": 30
   },
   "tool_calls_per_question": {
-    "overall_average": 1.27,
+    "overall_average": 1.23,
     "by_category": {
       "single_doc": {
         "average": 1.0,
@@ -43,7 +43,7 @@
         "n": 4
       },
       "near_miss": {
-        "average": 1.69,
+        "average": 1.62,
         "n": 13
       },
       "out_of_scope": {

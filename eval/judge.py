@@ -9,6 +9,7 @@ instead of grading).
 """
 import json
 import re
+import argparse
 import subprocess
 import sys
 import tempfile
@@ -221,46 +222,78 @@ def judge_record(record):
 
 
 def main():
-    traces = load_traces()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--ids",
+        help="Comma-separated question ids to judge (default: all). "
+        "Other questions' existing results in judged.jsonl are left untouched.",
+    )
+    args = parser.parse_args()
+
+    all_traces = load_traces()
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    if args.ids:
+        wanted_ids = {qid.strip() for qid in args.ids.split(",") if qid.strip()}
+        unknown = wanted_ids - {t["id"] for t in all_traces}
+        if unknown:
+            print(f"Unknown question id(s): {', '.join(sorted(unknown))}", file=sys.stderr)
+            return 1
+        traces_to_judge = [t for t in all_traces if t["id"] in wanted_ids]
+    else:
+        traces_to_judge = all_traces
+
+    # Preserve existing judged results for questions we're not re-judging.
+    existing_results = {}
+    if OUT_PATH.exists():
+        for line in OUT_PATH.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                r = json.loads(line)
+                existing_results[r["id"]] = r
 
     run_start = time.monotonic()
     succeeded = 0
     failed = 0
 
-    with OUT_PATH.open("w", encoding="utf-8") as out_f:
-        for i, record in enumerate(traces, 1):
-            print(f"[{i}/{len(traces)}] {record['id']} ({record['category']})", flush=True)
-            t0 = time.monotonic()
-            try:
-                judged = judge_record(record)
-            except (subprocess.TimeoutExpired, RuntimeError, ValueError) as e:
-                failed += 1
-                print(f"    FAILED ({time.monotonic() - t0:.1f}s): {e}", flush=True)
-                judged = {
-                    "id": record["id"],
-                    "category": record["category"],
-                    "question": record["question"],
-                    "faithfulness": None,
-                    "completeness": None,
-                    "correctly_cited_sources": None,
-                    "correctly_declined": None,
-                    "faithfulness_reasoning": None,
-                    "completeness_reasoning": None,
-                    "reasoning": None,
-                    "error": str(e),
-                }
-            else:
-                succeeded += 1
-                print(f"    ok ({time.monotonic() - t0:.1f}s)", flush=True)
+    for i, record in enumerate(traces_to_judge, 1):
+        print(f"[{i}/{len(traces_to_judge)}] {record['id']} ({record['category']})", flush=True)
+        t0 = time.monotonic()
+        try:
+            judged = judge_record(record)
+        except (subprocess.TimeoutExpired, RuntimeError, ValueError) as e:
+            failed += 1
+            print(f"    FAILED ({time.monotonic() - t0:.1f}s): {e}", flush=True)
+            judged = {
+                "id": record["id"],
+                "category": record["category"],
+                "question": record["question"],
+                "faithfulness": None,
+                "completeness": None,
+                "correctly_cited_sources": None,
+                "correctly_declined": None,
+                "faithfulness_reasoning": None,
+                "completeness_reasoning": None,
+                "reasoning": None,
+                "error": str(e),
+            }
+        else:
+            succeeded += 1
+            print(f"    ok ({time.monotonic() - t0:.1f}s)", flush=True)
 
-            out_f.write(json.dumps(judged) + "\n")
-            out_f.flush()
+        existing_results[record["id"]] = judged
+
+    # Write out in the original traces.jsonl order (covering all questions we
+    # have judged results for, even ones not in this particular run).
+    with OUT_PATH.open("w", encoding="utf-8") as out_f:
+        for t in all_traces:
+            if t["id"] in existing_results:
+                out_f.write(json.dumps(existing_results[t["id"]]) + "\n")
 
     total_elapsed = time.monotonic() - run_start
     print()
     print("=" * 60)
-    print(f"Completed: {succeeded}/{len(traces)} succeeded, {failed} failed")
+    print(f"Completed: {succeeded}/{len(traces_to_judge)} succeeded, {failed} failed")
     print(f"Total time: {total_elapsed:.1f}s ({total_elapsed / 60:.1f} min)")
     print(f"Results written to {OUT_PATH}")
     print("=" * 60)
